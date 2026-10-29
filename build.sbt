@@ -14,7 +14,11 @@ ThisBuild / libraryDependencySchemes ++= Seq(
 )
 
 lazy val scala212 = "2.12.20"
-lazy val scala3   = "3.3.4"
+/* Keep the Scala 3 plugin compatible with the Scala version used by sbt 2.0.8. */
+lazy val scala3 = "3.8.4"
+
+lazy val sbt1 = "1.10.11"
+lazy val sbt2 = "2.0.8"
 
 val scala2Versions:     Seq[String] = Seq(scala212)
 val scala2And3Versions: Seq[String] = scala2Versions ++ Seq(scala3)
@@ -175,21 +179,47 @@ lazy val cli = projectMatrix
 
 lazy val `sbt-converter` = projectMatrix
   .in(file("sbt-converter"))
-  .jvmPlatform(scala2Versions)
+  .jvmPlatform(scala2And3Versions)
   .dependsOn(`importer-portable` % "compile->compile;test->test")
-  .enablePlugins(ScriptedPlugin)
+  .enablePlugins(SbtPlugin)
   .configure(baseSettings)
   .settings(
     name := "sbt-converter",
-    sbtPlugin := true,
-    addSbtPlugin("ch.epfl.scala" % "sbt-scalajs-bundler" % "0.21.1"),
-    addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.20.1"),
+    /* Scala 2.12 produces the sbt 1.x plugin, Scala 3 the sbt 2.x plugin */
+    pluginCrossBuild / sbtVersion := {
+      scalaBinaryVersion.value match {
+        case "2.12" => sbt1
+        case _      => sbt2
+      }
+    },
+    addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.22.0"),
+    /* `PlatformDepsPlugin` (which gives us `%%%`) only exists for sbt 1.x.
+     * sbt 2.x has cross-platform support built in, and `sbt-scalajs` no longer depends on it. */
+    libraryDependencies ++= {
+      val sbtV   = (pluginCrossBuild / sbtBinaryVersion).value
+      val scalaV = scalaBinaryVersion.value
+      if (scalaV == "2.12")
+        Seq(Defaults.sbtPluginExtra("org.portable-scala" % "sbt-platform-deps" % "1.0.2", sbtV, scalaV))
+      else Nil
+    },
+    /* sbt 2.x brings its own `scala-collection-compat_3`, while our `for3Use2_13` dependencies drag in
+     * the `_2.13` build of the very same library. They are interchangeable, so drop the 2.13 one. */
+    excludeDependencies ++= {
+      if (scalaBinaryVersion.value == "2.12") Nil
+      else Seq(ExclusionRule("org.scala-lang.modules", "scala-collection-compat_2.13"))
+    },
+    // set up 'scripted; sbt plugin for testing sbt plugins
     scriptedBufferLog := false,
     scriptedLaunchOpts ++= Seq("-Xmx2048M", "-Dplugin.version=" + version.value),
+    scriptedSbt := (pluginCrossBuild / sbtVersion).value,
     watchSources ++= {
       (sourceDirectory.value ** "*").get
     },
     libraryDependencies ++= Seq(Deps.awssdkS3),
+    /* parallel collections are built into Scala 2.12, but a separate library from 2.13 on */
+    libraryDependencies ++= {
+      if (scalaBinaryVersion.value == "2.12") Nil else Seq(Deps.parallelCollections)
+    },
   )
 
 lazy val `import-scalajs-definitions` = projectMatrix
