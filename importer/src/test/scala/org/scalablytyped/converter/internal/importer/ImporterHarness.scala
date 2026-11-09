@@ -1,7 +1,6 @@
 package org.scalablytyped.converter.internal
 package importer
 
-import ammonite.ops.{%, %%, ShelloutException}
 import com.olvind.logging
 import com.olvind.logging.{LogLevel, LogRegistry}
 import org.scalablytyped.converter.Selection
@@ -194,18 +193,22 @@ trait ImporterHarness extends AnyFunSuite {
               }
               files.deleteAll(checkFolder)
               os.copy(targetFolder, checkFolder)
-              GitLock.synchronized(%("git", "add", checkFolder))
+              GitLock.synchronized(
+                os.proc("git", "add", checkFolder)
+                  .call(cwd = wd, stdin = os.Inherit, stdout = os.Inherit, stderr = os.Inherit),
+              )
             }
 
-            Try(%%("diff", "-NaurwB", checkFolder, targetFolder)) match {
+            Try(os.proc("diff", "-NaurwB", checkFolder, targetFolder).call(cwd = wd, stderr = os.Pipe)) match {
               case Success(_) => if (run.update) pending else succeed
-              case Failure(th: ShelloutException) =>
+              case Failure(th: os.SubprocessException) =>
                 try {
-                  val diff = %%("diff", "-rwB", checkFolder, targetFolder).out.string
+                  val diff =
+                    os.proc("diff", "-rwB", checkFolder, targetFolder).call(cwd = wd, stderr = os.Pipe).out.text()
                   fail(s"Output for test $testFolder was not as expected : $diff", th)
                 } catch {
                   // not serializable
-                  case th: ShelloutException => sys.error(th.getMessage)
+                  case th: os.SubprocessException => sys.error(th.getMessage)
                 }
               case Failure(th) => throw th
             }
@@ -218,7 +221,10 @@ trait ImporterHarness extends AnyFunSuite {
               }
               files.deleteAll(checkFolder)
               os.copy(targetFolder, checkFolder)
-              synchronized(%("git", "add", checkFolder))
+              synchronized(
+                os.proc("git", "add", checkFolder)
+                  .call(cwd = wd, stdin = os.Inherit, stdout = os.Inherit, stderr = os.Inherit),
+              )
             }
             errors.foreach {
               case (fromSource, detail) =>

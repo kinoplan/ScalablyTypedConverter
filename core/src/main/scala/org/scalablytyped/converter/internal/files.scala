@@ -5,7 +5,6 @@ import java.nio.file.StandardOpenOption.{CREATE, TRUNCATE_EXISTING}
 import java.nio.file.{Files, Path}
 import java.util
 
-import ammonite.ops.%
 import io.circe.{Decoder, Encoder}
 import org.scalablytyped.converter.internal.environment.OpSystem
 
@@ -133,9 +132,8 @@ object files {
   def deleteAll(p: os.Path): Unit =
     environment.OS match {
       case OpSystem.WINDOWS => os.remove.all(p)
-      case _ => {
-        implicit val wd = os.home
-        %.rm("-Rf", p)
-      }
+      case _ =>
+        os.proc("rm", "-Rf", p).call(cwd = os.home, stdin = os.Inherit, stdout = os.Inherit, stderr = os.Inherit)
+        ()
     }
 }

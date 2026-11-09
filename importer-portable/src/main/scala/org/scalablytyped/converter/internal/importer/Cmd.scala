@@ -1,17 +1,18 @@
 package org.scalablytyped.converter.internal
 package importer
 
-import ammonite.ops.{Command, CommandResult, Shellout, ShelloutException}
 import com.olvind.logging.Logger
 
 class Cmd(logger: Logger[_], maxLengthOpt: Option[Int]) {
-  val runVerbose = Command(Vector.empty, Map.empty, executeStream(verbose = true))
-  val run        = Command(Vector.empty, Map.empty, executeStream(verbose = false))
+  def runVerbose(cmd: os.Shellable*)(implicit wd: os.Path): os.CommandResult = execute(verbose = true, wd, cmd)
+  def run(cmd:        os.Shellable*)(implicit wd: os.Path): os.CommandResult = execute(verbose = false, wd, cmd)
 
   private val MaxLength = maxLengthOpt.getOrElse(Int.MaxValue)
 
-  def executeStream(verbose: Boolean)(wd: os.Path, cmd: Command[_]): CommandResult = {
-    lazy val cmdStr = s"'$wd: ${cmd.cmd.mkString(" ")}'" match {
+  private def execute(verbose: Boolean, wd: os.Path, cmd: Seq[os.Shellable]): os.CommandResult = {
+    val proc = os.proc(cmd: _*)
+
+    lazy val cmdStr = s"'$wd: ${proc.commandChunks.mkString(" ")}'" match {
       case tooLong if tooLong.length > MaxLength => tooLong.take(MaxLength - 3) + "..."
       case other                                 => other
     }
@@ -20,11 +21,9 @@ class Cmd(logger: Logger[_], maxLengthOpt: Option[Int]) {
       logger.warn(cmdStr)
     }
 
-    try {
-      val res = Shellout.executeStream(wd, cmd)
-      res
-    } catch {
-      case ex: ShelloutException =>
+    try proc.call(cwd = wd, stderr = os.Pipe)
+    catch {
+      case ex: os.SubprocessException =>
         logger.error(s"$cmdStr ${ex.result}")
         throw ex
     }

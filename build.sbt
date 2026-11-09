@@ -77,10 +77,10 @@ lazy val core = projectMatrix
   .configure(baseSettings)
   .settings(
     libraryDependencies ++= Seq(
-      Deps.osLib.cross(CrossVersion.for3Use2_13),
-      Deps.sourcecode.exclude("org.scala-lang.modules", "scala-collection-compat_3"),
-      Deps.ammoniteOps.cross(CrossVersion.for3Use2_13),
-    ) ++ Deps.circe.map(_.exclude("org.scala-lang.modules", "scala-collection-compat_3")),
+      Deps.osLib,
+      Deps.sourcecode,
+      Deps.collectionCompat,
+    ) ++ Deps.circe,
   )
 
 lazy val logging = projectMatrix
@@ -140,7 +140,10 @@ lazy val importer = projectMatrix
   .settings(
     libraryDependencies ++= {
       val base = Seq(
-        Deps.coursier.cross(CrossVersion.for3Use2_13).exclude("org.scala-lang.modules", "scala-xml_2.13"),
+        Deps.coursier
+          .cross(CrossVersion.for3Use2_13)
+          .exclude("org.scala-lang.modules", "scala-xml_2.13")
+          .exclude("org.scala-lang.modules", "scala-collection-compat_2.13"),
         Deps.scalaXml,
         Deps.scalatest % Test,
       )
@@ -202,12 +205,6 @@ lazy val `sbt-converter` = projectMatrix
         Seq(Defaults.sbtPluginExtra("org.portable-scala" % "sbt-platform-deps" % "1.0.2", sbtV, scalaV))
       else Nil
     },
-    /* sbt 2.x brings its own `scala-collection-compat_3`, while our `for3Use2_13` dependencies drag in
-     * the `_2.13` build of the very same library. They are interchangeable, so drop the 2.13 one. */
-    excludeDependencies ++= {
-      if (scalaBinaryVersion.value == "2.12") Nil
-      else Seq(ExclusionRule("org.scala-lang.modules", "scala-collection-compat_2.13"))
-    },
     // set up 'scripted; sbt plugin for testing sbt plugins
     scriptedBufferLog := false,
     scriptedLaunchOpts ++= Seq("-Xmx2048M", "-Dplugin.version=" + version.value),
@@ -238,7 +235,10 @@ lazy val `import-scalajs-definitions` = projectMatrix
         case _ => // Scala 3
           List(
             "org.scala-lang" % "scalap" % "2.13.16",
-            Deps.coursier.cross(CrossVersion.for3Use2_13).exclude("org.scala-lang.modules", "scala-xml_2.13"),
+            Deps.coursier
+              .cross(CrossVersion.for3Use2_13)
+              .exclude("org.scala-lang.modules", "scala-xml_2.13")
+              .exclude("org.scala-lang.modules", "scala-collection-compat_2.13"),
           )
       }
     },

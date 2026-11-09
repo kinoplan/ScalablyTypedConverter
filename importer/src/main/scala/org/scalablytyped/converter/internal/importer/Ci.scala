@@ -163,26 +163,26 @@ class Ci(config: Ci.Config, paths: Ci.Paths, pool: ForkJoinPool, ec: ExecutionCo
       if (files.exists(projectFolder)) {
         implicit val wd = projectFolder
         if (!config.offline) {
-          Try(interfaceCmd.runVerbose.git("fetch"))
+          Try(interfaceCmd.runVerbose("git", "fetch"))
         }
         if (!config.dontCleanProject) {
-          Try(interfaceCmd.runVerbose.git("clean", "-fdX")) // remove ignored files/folders
-          Try(interfaceCmd.runVerbose.git("clean", "-fd"))
-          Try(interfaceCmd.runVerbose.git("reset", "--hard", "origin/master"))
+          Try(interfaceCmd.runVerbose("git", "clean", "-fdX")) // remove ignored files/folders
+          Try(interfaceCmd.runVerbose("git", "clean", "-fd"))
+          Try(interfaceCmd.runVerbose("git", "reset", "--hard", "origin/master"))
           Try(files.deleteAll(projectFolder / ".git/gc.log"))
-          Try(interfaceCmd.runVerbose.git("prune"))
+          Try(interfaceCmd.runVerbose("git", "prune"))
         }
       } else
         Try {
           implicit val wd = paths.cacheFolder
-          interfaceCmd.runVerbose.git("clone", config.repo.toString)
+          interfaceCmd.runVerbose("git", "clone", config.repo.toString)
         }.recover {
           case _ =>
             os.makeDir(projectFolder)
 
             implicit val wd = projectFolder
-            interfaceCmd.runVerbose.git("init")
-            interfaceCmd.runVerbose.git("remote", "add", "origin", config.repo.toString)
+            interfaceCmd.runVerbose("git", "init")
+            interfaceCmd.runVerbose("git", "remote", "add", "origin", config.repo.toString)
         }
 
       projectFolder
@@ -337,7 +337,7 @@ class Ci(config: Ci.Config, paths: Ci.Paths, pool: ForkJoinPool, ec: ExecutionCo
     val librariesByScore      = targetFolder / "libraries_by_score.md"
     val librariesByDependents = targetFolder / "libraries_by_dependents.md"
 
-    val locOutput = Try(interfaceCmd.run("loc")(targetFolder)).toOption.map(_.out.string)
+    val locOutput = Try(interfaceCmd.run("loc")(targetFolder)).toOption.map(_.out.text())
     files.softWrite(readme)(_.print(Readme(summary, RunId, locOutput)))
     files.softWrite(librariesByName)(_.print(lists.byName))
     files.softWrite(librariesByScore)(_.print(lists.byScore))

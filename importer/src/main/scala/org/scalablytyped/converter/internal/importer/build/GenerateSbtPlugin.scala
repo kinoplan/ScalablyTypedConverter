@@ -2,7 +2,6 @@ package org.scalablytyped.converter.internal
 package importer
 package build
 
-import ammonite.ops.%
 import org.scalablytyped.converter.internal.scalajs.{Name, ScalaJsClasses, ScalaNameEscape, Versions}
 import org.scalablytyped.converter.internal.stringUtils.quote
 
@@ -22,14 +21,18 @@ object GenerateSbtPlugin {
       deleteUnknowns = true,
       soft           = true,
     )
-    implicit val wd = projectDir
-    %.extend(
-      Nil,
-      Map(
-        "JVM_OPTS" -> "-Xmx1G",
-        "JAVA_TOOL_OPTIONS" -> "-XX:MaxInlineLevel=24 -Xmx1G -Xss2M",
-      ),
-    )("sbt", action)
+    os.proc("sbt", action)
+      .call(
+        cwd = projectDir,
+        env = Map(
+          "JVM_OPTS" -> "-Xmx1G",
+          "JAVA_TOOL_OPTIONS" -> "-XX:MaxInlineLevel=24 -Xmx1G -Xss2M",
+        ),
+        stdin  = os.Inherit,
+        stdout = os.Inherit,
+        stderr = os.Inherit,
+      )
+    ()
   }
 
   def contents(
