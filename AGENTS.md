@@ -16,7 +16,7 @@ Minimize tokens in responses:
 **ScalablyTyped Converter** converts TypeScript definition files (`.d.ts`) into Scala.js facades, enabling use of JS libraries in Scala.js projects.
 
 - **Stack:** Scala 2.12 + 3.3, SBT, scalafmt, parser-combinators, Circe, Coursier, os-lib
-- **Docs:** [README.md](README.md), [CLAUDE.md](CLAUDE.md)
+- **Docs:** [README.md](README.md)
 
 ---
 
