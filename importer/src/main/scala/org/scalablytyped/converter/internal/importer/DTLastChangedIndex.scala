@@ -44,14 +44,14 @@ object DTLastChangedIndex {
   def apply(cmd: Cmd, repo: os.Path, cacheDir: os.Path): DTLastChangedIndex = {
     implicit val wd = repo
 
-    val head = cmd.run.git("rev-parse", "HEAD").out.lines.head
+    val head = cmd.run("git", "rev-parse", "HEAD").out.lines().head
 
     FileLocking.cachedValue((cacheDir / head).toNIO, DevNull) {
-      val res         = cmd.run.git("log", "--raw", "--pretty=format:%ct")
+      val res         = cmd.run("git", "log", "--raw", "--pretty=format:%ct")
       var changedTime = System.currentTimeMillis() / 1000L
       val lastChanged = mutable.Map.empty[os.RelPath, Long]
 
-      res.out.lines.map(_.split(" ")).foreach {
+      res.out.lines().map(_.split(" ")).foreach {
         // empty
         case Array("") =>
           ()

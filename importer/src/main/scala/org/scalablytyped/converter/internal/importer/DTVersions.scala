@@ -4,7 +4,6 @@ package importer
 import java.net.URI
 import java.time.{Instant, ZonedDateTime}
 
-import ammonite.ops.%%
 import org.scalablytyped.converter.internal.ts.{CalculateLibraryVersion, PackageJson}
 
 import scala.util.matching.Regex
@@ -26,14 +25,14 @@ class DTVersions(lastChangedIndex: DTLastChangedIndex, includeGitPart: Boolean) 
       comments:       Comments,
   ): LibraryVersion = {
 
-    implicit val wd = sourceFolder.path
+    val wd = sourceFolder.path
 
     val libraryVersion = packageJsonOpt.flatMap(_.version).orElse(DefinitelyTypedVersion.from(comments))
 
     val inGit: Option[InGit] = {
       if (!includeGitPart) None
       else
-        Try(uri(%%.git("remote", "get-url", "origin").out.string.trim)) match {
+        Try(uri(os.proc("git", "remote", "get-url", "origin").call(cwd = wd, stderr = os.Pipe).out.trim())) match {
           case Success(uri) =>
             val lastModified = ZonedDateTime.ofInstant(
               Instant.ofEpochSecond(lastChangedIndex(sourceFolder.path.toIO)),

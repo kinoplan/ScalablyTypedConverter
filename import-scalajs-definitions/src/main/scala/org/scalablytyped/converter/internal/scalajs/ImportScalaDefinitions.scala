@@ -1,7 +1,6 @@
 package org.scalablytyped.converter.internal
 package scalajs
 
-import ammonite.ops._
 import com.olvind.logging
 import org.scalablytyped.converter.internal.maps._
 import org.scalablytyped.converter.internal.scalajs.transforms.Sorter
@@ -71,16 +70,15 @@ object ImportScalaDefinitions extends App {
   type MyTree = Tree with HasCodePath
 
   private val all: IArray[MyTree] = {
-    implicit val wd: os.Path = tempDir
-
     All.foreach { jar =>
-      %("unzip", "-o", jar.toString)
+      os.proc("unzip", "-o", jar.toString)
+        .call(cwd = tempDir, stdin = os.Inherit, stdout = os.Inherit, stderr = os.Inherit)
     }
 
     IArray
       .fromTraversable(os.walk(tempDir))
       .flatMap {
-        case file if file.isFile && file.ext == "class" && !file.last.contains("$") =>
+        case file if os.isFile(file) && file.ext == "class" && !file.last.contains("$") =>
           val byteCode  = ByteCode(os.read.bytes(file))
           val classFile = ClassFileParser.parse(byteCode)
 
@@ -231,7 +229,8 @@ object ImportScalaDefinitions extends App {
     files.sync(printed, dumpSourceTo, deleteUnknowns = true, soft = true)
   }
 
-  %("git", "add", dumpSourceTo, dumpJsonTo)(projectRoot)
+  os.proc("git", "add", dumpSourceTo, dumpJsonTo)
+    .call(cwd = projectRoot, stdin = os.Inherit, stdout = os.Inherit, stderr = os.Inherit)
 
   private def toParamTrees(paramSymbols: Seq[Symbol]): IArray[ParamTree] =
     IArray
