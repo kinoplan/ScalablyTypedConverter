@@ -1,12 +1,12 @@
 organization := "org.scalablytyped"
 name := "react-native"
-version := "0.0-unknown-2e7907"
+version := "0.0-unknown-55ad86"
 scalaVersion := "3.3.6"
 enablePlugins(ScalaJSPlugin)
 libraryDependencies ++= Seq(
-  "com.github.japgolly.scalajs-react" %%% "core" % "4.0.0",
+  "com.github.japgolly.scalajs-react" %%% "core" % "4.1.0",
   "com.olvind" %%% "scalablytyped-runtime" % "2.4.2",
-  "org.scalablytyped" %%% "std" % "0.0-unknown-0cd223")
+  "org.scalablytyped" %%% "std" % "0.0-unknown-554feb")
 publishArtifact in packageDoc := false
 scalacOptions ++= List("-encoding", "utf-8", "-feature", "-language:implicitConversions", "-language:higherKinds", "-language:existentials", "-no-indent")
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
